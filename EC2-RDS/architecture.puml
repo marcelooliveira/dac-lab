@@ -1,0 +1,54 @@
+@startuml AWS_Lambda_Architecture
+
+!define AWSPuml https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v20.0/dist
+!include AWSPuml/AWSSimplified.puml
+
+' Inclusões de fontes PlantUML conforme puml-sources.txt
+!include AWSPuml/AWSCommon.puml
+!include AWSPuml/AWSSimplified.puml
+!include AWSPuml/Groups/AWSCloud.puml
+!include AWSPuml/Groups/VPC.puml
+!include AWSPuml/Groups/AvailabilityZone.puml
+!include AWSPuml/Groups/PublicSubnet.puml
+!include AWSPuml/Groups/PrivateSubnet.puml
+!include AWSPuml/NetworkingContentDelivery/ElasticLoadBalancingApplicationLoadBalancer.puml
+!include AWSPuml/Compute/EC2Instance.puml
+!include AWSPuml/Database/RDS.puml
+!include AWSPuml/Database/RDS.puml
+!include AWSPuml/NetworkingContentDelivery/Route53.puml
+!include AWSPuml/SecurityIdentityCompliance/IdentityAccessManagementRole.puml
+
+hide stereotype
+skinparam linetype ortho
+
+AWSCloudGroup(cloud) {
+  VPCGroup(vpc) {
+    AvailabilityZoneGroup(az1, "Availability Zone 1") {
+      PublicSubnetGroup(public_subnet, "Public Subnet") {
+          ElasticLoadBalancingApplicationLoadBalancer(alb, "ALB", "")
+      }
+      PrivateSubnetGroup(private_subnet, "Private Subnet") {
+        EC2Instance(demo, "PTFE Demo", "")
+        EC2Instance(pmd, "PTFE PMD", "")
+        EC2Instance(pes, "PTFE PES", "")
+        RDS(rds, "RDS DB", "")
+      }
+      alb -down-> demo : "HTTP/HTTPS"
+      alb -down-> pmd : "HTTP/HTTPS"
+      alb -down-> pes : "HTTP/HTTPS"
+      pes -down-> rds : "DB Connection"
+    }
+  }
+  Route53(route53, "Route53 Zone: hashidemos.io", "")
+  route53 -right-> alb : "DNS"
+  IdentityAccessManagementRole(iam, "IAM Roles", "")
+  demo -down-> iam
+  pmd -down-> iam
+  pes -down-> iam
+}
+
+note bottom
+Esta arquitetura utiliza AWS VPC com sub-redes públicas e privadas, onde um Application Load Balancer (ALB) direciona o tráfego para instâncias EC2 que executam diferentes modos do Terraform Enterprise (Demo, PMD, PES). O Route53 gerencia o DNS para o domínio hashidemos.io, enquanto o RDS provê o banco de dados para a solução. O controle de acesso é realizado por IAM Roles, garantindo segurança e segregação de permissões entre os componentes.
+end note
+
+@enduml
